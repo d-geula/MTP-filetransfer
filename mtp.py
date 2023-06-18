@@ -17,39 +17,52 @@ class MTPManager:
         Set `overwrite` to True if you want to overwrite existing files or folders without prompting.
         """
 
-        mount = self.manage_storage("mount")
-        if mount.returncode == 0:
-            print("Storage mounted")
+        self.kill_process(
+            self.process_name
+        )  # just in case the process is still running
+
+        try:
+            self.manage_storage("mount")
+            overwrite_flag = "/Y" if overwrite else ""
+
+            dest = Path(dest).resolve()
+            for src_path in src:
+                src_path = Path(src_path).resolve()
+                dest_item_path = dest / src_path.name
+
+                if src_path.is_file():
+                    self.run_cmd(f'xcopy "{src_path}" "{dest}" {overwrite_flag}')
+
+                elif src_path.is_dir():
+                    self.run_cmd(
+                        f'xcopy "{src_path}" "{dest_item_path}" /E /I {overwrite_flag}'
+                    )
+
+                else:
+                    raise ValueError(
+                        f"Invalid path: {src_path} is neither a file nor a folder."
+                    )
 
             unmount = self.manage_storage("unmount")
             if unmount.returncode == 0:
-                print("Storage unmounted")
                 self.kill_process(self.process_name)
-                print("Process killed")
-            else:
-                print("Storage unmount failed")
-                self.kill_process(self.process_name)
-                print("Process killed")
-        else:
-            print("Storage mount failed")
+
+        except Exception as e:
+            print(e)
             self.kill_process(self.process_name)
-            print("Process killed")
 
     def manage_storage(self, operation: str):
         """
         Mounts or unmounts the specified storage on the device.
         """
 
-        cmd = f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
-        result = subprocess.run(cmd, shell=True, check=True)
-        return result
+        return self.run_cmd(
+            f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
+        )
 
-    def run_cmd(self, cmd: str):
-        subprocess.run(cmd, shell=True, check=True)
-
-    def is_running(self, process_name: str) -> bool:
+    def kill_process(self, process_name):
         """
-        Check if the specified process is running.
+        Terminates the specified process if it is running.
         """
 
         # Check if the process is running
@@ -58,14 +71,9 @@ class MTPManager:
 
         # Check if the process name is found in the tasklist output
         if process_name.lower() in process_check.stdout.lower():
-            return True
-        else:
-            return False
+            # Terminate the process
+            self.run_cmd(f"taskkill /f /im {process_name}")
 
-    def kill_process(self, process_name: str):
-        """
-        Terminates the specified process.
-        """
-
-        cmd = f"taskkill /f /im {process_name}"
-        self.run_cmd(cmd)
+    def run_cmd(self, cmd):
+        results = subprocess.run(cmd, shell=True, check=True)
+        return results
