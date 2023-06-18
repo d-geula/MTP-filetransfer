@@ -17,30 +17,23 @@ class MTPManager:
         Set `overwrite` to True if you want to overwrite existing files or folders without prompting.
         """
 
-        if self.is_running(self.process_name):
-            self.kill_process(self.process_name)
+        mount = self.manage_storage("mount")
+        if mount.returncode == 0:
+            print("Storage mounted")
 
-        self.manage_storage("mount")
-
-        overwrite_flag = "/Y" if overwrite else ""
-
-        for src_path in src:
-            dest_item_path = Path(dest) / Path(src_path).name
-
-            if Path(src_path).is_file():
-                cmd = f'xcopy "{src_path}" "{dest}" {overwrite_flag}'
-                self.run_cmd(cmd)
-
-            elif Path(src_path).is_dir():
-                cmd = f'xcopy "{src_path}" "{dest_item_path}" /E /I {overwrite_flag}'
-                self.run_cmd(cmd)
-
+            unmount = self.manage_storage("unmount")
+            if unmount.returncode == 0:
+                print("Storage unmounted")
+                self.kill_process(self.process_name)
+                print("Process killed")
             else:
-                raise ValueError(
-                    f"Invalid path: {src_path} is neither a file nor a folder."
-                )
-
-        self.manage_storage("unmount")
+                print("Storage unmount failed")
+                self.kill_process(self.process_name)
+                print("Process killed")
+        else:
+            print("Storage mount failed")
+            self.kill_process(self.process_name)
+            print("Process killed")
 
     def manage_storage(self, operation: str):
         """
@@ -48,7 +41,8 @@ class MTPManager:
         """
 
         cmd = f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
-        self.run_cmd(cmd)
+        result = subprocess.run(cmd, shell=True, check=True)
+        return result
 
     def run_cmd(self, cmd: str):
         subprocess.run(cmd, shell=True, check=True)
