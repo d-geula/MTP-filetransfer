@@ -1,5 +1,5 @@
 from pathlib import Path
-from mtp_class import MTPManager
+from mtp import MTPManager
 
 dest_path = Path("V:/")
 files_to_copy = [
