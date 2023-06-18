@@ -2,6 +2,8 @@
 Mount, unmount, and transfer files to an MTP device using [mtpmount](https://github.com/hst125fan/mtpmount) in Python.
 
 # Requirements
+mtpmount ([Latest](https://github.com/hst125fan/mtpmount/releases/latest))
+
 Dokan library ([v1.5.1.1](https://github.com/dokan-dev/dokany/releases/tag/v1.5.1.1000))
 
 Ensure that you have installed the Dokan library by following these steps:
