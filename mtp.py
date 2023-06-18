@@ -10,6 +10,10 @@ class MTPManager:
         self.storage_name = storage_name
         self.drive_letter = drive_letter
 
+    def __del__(self):
+        self.close(self.process_name)
+        self.manage_storage("unmount")
+
     def copy_files(self, src: list, dest, overwrite=False):
         """
         Copies one or more files or folders to the specified destination path.
@@ -17,21 +21,21 @@ class MTPManager:
         Set `overwrite` to True if you want to overwrite existing files or folders without prompting.
         """
 
-        if self.is_running(self.process_name):
-            self.kill_process(self.process_name)
-
+        self.close(self.process_name)  # just in case the process is still running
         self.manage_storage("mount")
 
         overwrite_flag = "/Y" if overwrite else ""
 
+        dest = Path(dest).resolve()
         for src_path in src:
-            dest_item_path = Path(dest) / Path(src_path).name
+            src_path = Path(src_path).resolve()
+            dest_item_path = dest / src_path.name
 
-            if Path(src_path).is_file():
+            if src_path.is_file():
                 cmd = f'xcopy "{src_path}" "{dest}" {overwrite_flag}'
                 self.run_cmd(cmd)
 
-            elif Path(src_path).is_dir():
+            elif src_path.is_dir():
                 cmd = f'xcopy "{src_path}" "{dest_item_path}" /E /I {overwrite_flag}'
                 self.run_cmd(cmd)
 
@@ -46,32 +50,15 @@ class MTPManager:
         """
         Mounts or unmounts the specified storage on the device.
         """
-
         cmd = f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
+        self.run_cmd(cmd)
+
+    def close(self, process_name):
+        """
+        Terminates the specified process if it is running.
+        """
+        cmd = f"taskkill /f /im {process_name}"
         self.run_cmd(cmd)
 
     def run_cmd(self, cmd: str):
         subprocess.run(cmd, shell=True, check=True)
-
-    def is_running(self, process_name: str) -> bool:
-        """
-        Check if the specified process is running.
-        """
-
-        # Check if the process is running
-        cmd = f'tasklist /fi "imagename eq {process_name}"'
-        process_check = subprocess.run(cmd, capture_output=True, text=True)
-
-        # Check if the process name is found in the tasklist output
-        if process_name.lower() in process_check.stdout.lower():
-            return True
-        else:
-            return False
-
-    def kill_process(self, process_name: str):
-        """
-        Terminates the specified process.
-        """
-
-        cmd = f"taskkill /f /im {process_name}"
-        self.run_cmd(cmd)
