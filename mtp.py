@@ -1,3 +1,9 @@
+# Author: D.Geula
+# GitHub: https://github.com/d-geula
+# Date: 18-06-2023
+# Description: python access for mtpmount
+
+
 import subprocess
 from pathlib import Path
 
@@ -17,9 +23,8 @@ class MTPManager:
         Set `overwrite` to True if you want to overwrite existing files or folders without prompting.
         """
 
-        self.kill_process(
-            self.process_name
-        )  # just in case the process is still running
+        # just in case the process is still running
+        self.kill_process(self.process_name)
 
         try:
             self.manage_storage("mount")
