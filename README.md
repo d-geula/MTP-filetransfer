@@ -68,3 +68,6 @@ mtp = MTPManager(mtpmount_path, device_name, storage_name, drive_letter)
 
 mtp.copy_files(files_to_copy, dest_path, overwrite=True)
 ```
+
+# Licence
+Do whatever you want with this code. I don't care.
