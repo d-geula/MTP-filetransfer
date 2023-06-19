@@ -1,8 +1,7 @@
-# MTP-filetransfer
-Mount, unmount, and transfer files to an MTP device using [mtpmount](https://github.com/hst125fan/mtpmount) in Python.
+Easily transfer files to a MTP storage device using [mtpmount](https://github.com/hst125fan/mtpmount) in Python.
 
 # Requirements
-mtpmount ([Latest](https://github.com/hst125fan/mtpmount/releases/latest))
+mtpmount (included in the tools folder)
 
 Dokan library ([v1.5.1.1](https://github.com/dokan-dev/dokany/releases/tag/v1.5.1.1000))
 
