@@ -1,7 +1,7 @@
 # Author: D.Geula
 # GitHub: https://github.com/d-geula
 # Date: 18-06-2023
-# Description: python access for mtpmount
+# Description: python access for mtpmount.
 
 
 import subprocess
@@ -9,7 +9,24 @@ from pathlib import Path
 
 
 class MTPManager:
-    def __init__(self, mtpmount_path, device_name, storage_name, drive_letter: str):
+    """
+    Initializes an instance of the MTPManager class.
+
+    Parameters
+    ----------
+    mtpmount_path
+        The path to the mtpmount executable.
+    device_name : str
+        The name of the device to mount.
+    storage_name : str
+        The name of the storage to mount.
+    drive_letter : str
+        The drive letter to assign to the mounted storage.
+    """
+
+    def __init__(
+        self, mtpmount_path, device_name: str, storage_name: str, drive_letter: str
+    ):
         self.mtpmount_path = Path(mtpmount_path)
         self.process_name = self.mtpmount_path.name
         self.device_name = device_name
@@ -20,7 +37,19 @@ class MTPManager:
         """
         Copies one or more files or folders to the specified destination path.
 
-        Set `overwrite` to True if you want to overwrite existing files or folders without prompting.
+        Parameters
+        ----------
+        src : list
+            A list of source paths to copy.
+        dest
+            The destination path to copy to.
+        overwrite : bool, optional
+            Overwrite existing files at the destination without prompting for confirmation.
+
+        Raises
+        ------
+        ValueError
+            If `src_path` is not a valid file or folder path.
         """
 
         # just in case the process is still running
@@ -56,18 +85,33 @@ class MTPManager:
             print(e)
             self.kill_process(self.process_name)
 
-    def manage_storage(self, operation: str):
+    def manage_storage(self, operation: str) -> subprocess.CompletedProcess:
         """
         Mounts or unmounts the specified storage on the device.
+
+        Parameters
+        ----------
+        operation : str
+            The operation to perform. Must be either "mount" or "unmount".
+
+        Returns
+        -------
+        subprocess.CompletedProcess
+            The result of the command execution.
         """
 
         return self.run_cmd(
             f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
         )
 
-    def kill_process(self, process_name):
+    def kill_process(self, process_name: str):
         """
         Terminates the specified process if it is running.
+
+        Parameters
+        ----------
+        process_name : str
+            The name of the process to terminate.
         """
 
         # Check if the process is running
@@ -76,9 +120,22 @@ class MTPManager:
 
         # Check if the process name is found in the tasklist output
         if process_name.lower() in process_check.stdout.lower():
-            # Terminate the process
             self.run_cmd(f"taskkill /f /im {process_name}")
 
-    def run_cmd(self, cmd):
+    def run_cmd(self, cmd: str) -> subprocess.CompletedProcess:
+        """
+        Executes the specified command.
+
+        Parameters
+        ----------
+        cmd : str
+            The command to execute.
+
+        Returns
+        -------
+        subprocess.CompletedProcess
+            The result of the command execution.
+        """
+
         results = subprocess.run(cmd, shell=True, check=True)
         return results
