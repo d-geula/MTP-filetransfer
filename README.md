@@ -32,16 +32,12 @@ Ensure that you have installed the Dokan library by following these steps:
         Whether to print the output of subprocess commands.
 
 3. Copy files and/or folders to the MTP device using the `copy_files` method:
-    ```python
+    ```
     mtp.copy_files(src, dest, overwrite=False)
     ```
-    - `src` (list[str]): A list of source file or folder paths to be copied.
+    - `src` (list): A list of source file or folder paths to be copied.
     - `dest` (str): The destination path on the MTP device.
     - `overwrite` (bool, optional): Set to `True` to overwrite existing files or folders without prompting (default is `False`).
-
-    <br>
-
-    **Note:** The `copy_files` method will automatically mount the specified storage before copying the files and then finally unmount it.
 
 <br>
 
@@ -49,7 +45,7 @@ Ensure that you have installed the Dokan library by following these steps:
 
 Here's a complete example demonstrating the usage of `MTPManager`:
 
-```python
+```
 from mtp import MTPManager
 
 mtp = MTPManager(
