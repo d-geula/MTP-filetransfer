@@ -1,7 +1,7 @@
-Easily transfer files to a MTP storage device using [mtpmount](https://github.com/hst125fan/mtpmount) in Python.
+Easily transfer files to a MTP storage device using mtpcount in Python.
 
 # Requirements
-mtpmount (included in the tools folder)
+[mtpmount](https://github.com/hst125fan/mtpmount) (included in the tools folder)
 
 Dokan library ([v1.5.1.1](https://github.com/dokan-dev/dokany/releases/tag/v1.5.1.1000))
 
@@ -12,61 +12,74 @@ Ensure that you have installed the Dokan library by following these steps:
 # Usage
 
 1. Import the `MTPManager` class:
-    ```python
+    ```
     from mtp import MTPManager
     ```
 
 2. Create an instance of the `MTPManager` class by providing the necessary parameters:
-    ```python
-    mtp = MTPManager(mtpmount_path, device_name, storage_name, drive_letter)
     ```
-    - `mtpmount_path`: The path to the mtpmount executable.
-    - `device_name`: The name of the MTP device.
-    - `storage_name`: The name of the storage on the MTP device.
-    - `drive_letter` (str): The drive letter to assign to the mounted storage.
+    mtp = MTPManager(mtpmount_path, device_name, storage_name, drive_letter, verbose=True)
+    ```
+    - `mtpmount_path` (str):
+        The path to the mtpmount executable.
+    - `device_name` (str):
+        The name of the device to mount.
+    - `storage_name` (str):
+        The name of the storage to mount.
+    - `drive_letter` (str):
+        The drive letter to mount the storage to.
+    - `verbose` (bool, optional):
+        Whether to print the output of subprocess commands.
 
 3. Copy files and/or folders to the MTP device using the `copy_files` method:
     ```python
     mtp.copy_files(src, dest, overwrite=False)
     ```
-    - `src` (list): A list of source file or folder paths to be copied.
-    - `dest`: The destination path on the MTP device.
-    - `overwrite` (bool): Set to `True` to overwrite existing files or folders without prompting (default is `False`).
+    - `src` (list[str]): A list of source file or folder paths to be copied.
+    - `dest` (str): The destination path on the MTP device.
+    - `overwrite` (bool, optional): Set to `True` to overwrite existing files or folders without prompting (default is `False`).
 
     <br>
-
-    Example usage:
-    ```python
-    mtp.copy_files(["/path/to/file.txt", "/path/to/folder"], "/destination/path", overwrite=True)
-    ```
 
     **Note:** The `copy_files` method will automatically mount the specified storage before copying the files and then finally unmount it.
 
 <br>
 
-## Example
+# Example
 
 Here's a complete example demonstrating the usage of `MTPManager`:
 
 ```python
 from mtp import MTPManager
 
-dest_path = "V:/"
-files_to_copy = [
-    "folder_to_copy",
-    "file_to_copy.jpg"
-]
+mtp = MTPManager(
+    mtpmount_path="tools\mtpmount-x64\mtpmount.exe",
+    device_name="MyDevice",
+    storage_name="Internal shared storage",
+    drive_letter="X",
+    verbose=False,  # Optional, default is True
+)
 
-mtpmount_path = "tools/mtpmount-x64/mtpmount.exe"
+# Copy to device
+mtp.copy_files(
+    src=[
+        "tests/folder2",  # Folder
+        "tests/file.jpg",  # File
+    ],
+    dest="X:/",
+    overwrite=False,  # Optional, default is False
+)
 
-device_name = "MyDeviceName"
-storage_name = "Internal shared storage"
-drive_letter = "v"
-
-mtp = MTPManager(mtpmount_path, device_name, storage_name, drive_letter)
-
-mtp.copy_files(files_to_copy, dest_path, overwrite=True)
+# Copy from device
+mtp.copy_files(
+    src=[
+        "X:/folder",
+        "X:/file.jpg",
+    ],
+    dest="tests/copied/",
+    overwrite=True,
+)
 ```
 
 # Licence
-Do whatever you want with this code. I don't care.
+Do whatever you want with this code.
