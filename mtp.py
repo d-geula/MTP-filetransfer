@@ -10,38 +10,46 @@ from pathlib import Path
 
 class MTPManager:
     """
-    Initializes an instance of the MTPManager class.
+    Transfers files from one or more source paths to a destination path.
 
     Parameters
     ----------
-    mtpmount_path
+    mtpmount_path : str
         The path to the mtpmount executable.
     device_name : str
         The name of the device to mount.
     storage_name : str
         The name of the storage to mount.
     drive_letter : str
-        The drive letter to assign to the mounted storage.
+        The drive letter to mount the storage to.
+    verbose : bool, optional
+        Whether to print the output of subprocess commands.
     """
 
     def __init__(
-        self, mtpmount_path, device_name: str, storage_name: str, drive_letter: str
+        self,
+        mtpmount_path: str,
+        device_name: str,
+        storage_name: str,
+        drive_letter: str,
+        verbose: bool = True,
     ):
         self.mtpmount_path = Path(mtpmount_path)
         self.process_name = self.mtpmount_path.name
         self.device_name = device_name
         self.storage_name = storage_name
         self.drive_letter = drive_letter
+        self.verbose = verbose
 
-    def copy_files(self, src: list, dest, overwrite=False):
+    def copy_files(self, src: list[str], dest: str, overwrite=False) -> None:
         """
-        Copies one or more files or folders to the specified destination path.
+        Copies one or more files or folders to the specified destination path using `xcopy`.
 
         Parameters
         ----------
         src : list
             A list of source paths to copy.
-        dest
+        dest : str
             The destination path to copy to.
         overwrite : bool, optional
             Overwrite existing files at the destination without prompting for confirmation.
@@ -50,39 +58,58 @@ class MTPManager:
         ------
         ValueError
             If `src_path` is not a valid file or folder path.
+
+            If the path is invalid, the user will be prompted to either skip the file/folder or cancel the operation.
+            If the user chooses to skip the file/folder, the operation will continue with the remaining files/folders.
+            If the user chooses to cancel the operation, the method will exit and no files/folders will be copied.
         """
 
         # just in case the process is still running
         self.kill_process(self.process_name)
 
-        try:
-            self.manage_storage("mount")
-            overwrite_flag = "/Y" if overwrite else ""
+        self.manage_storage("mount")
+        overwrite_flag = "/Y" if overwrite else ""
 
-            dest = Path(dest).resolve()
-            for src_path in src:
-                src_path = Path(src_path).resolve()
-                dest_item_path = dest / src_path.name
+        dest = Path(dest).resolve()
+        for src_path in src:
+            src_path = Path(src_path).resolve()
+            dest_item_path = dest / src_path.name
 
+            try:
                 if src_path.is_file():
-                    self.run_cmd(f'xcopy "{src_path}" "{dest}" {overwrite_flag}')
+                    cmd = f'xcopy "{src_path}" "{dest}" {overwrite_flag}'
+                    self.run_cmd(cmd, shell=True, check=True)
 
                 elif src_path.is_dir():
-                    self.run_cmd(
+                    cmd = (
                         f'xcopy "{src_path}" "{dest_item_path}" /E /I {overwrite_flag}'
                     )
+                    self.run_cmd(cmd, shell=True, check=True)
 
                 else:
                     raise ValueError(
-                        f"Invalid path: {src_path} is neither a file nor a folder."
+                        f'\nInvalid path: "{src_path}" is not a valid file or folder path. '
+                        "Please check the path and try again."
                     )
 
-            unmount = self.manage_storage("unmount")
-            if unmount.returncode == 0:
-                self.kill_process(self.process_name)
+            except ValueError as e:
+                while True:
+                    response = input(
+                        f"{str(e)}\nDo you want to skip this file/folder,"
+                        "or cancel the operation? (Y/skip, N/cancel) "
+                    )
+                    if response.lower() in ["y", "n"]:
+                        break
+                    else:
+                        print("Invalid response. Please enter either 'y' or 'n'.")
 
-        except Exception as e:
-            print(e)
+                if response.lower() == "n":
+                    break
+                else:
+                    continue
+
+        unmount = self.manage_storage("unmount")
+        if unmount.returncode == 0:
             self.kill_process(self.process_name)
 
     def manage_storage(self, operation: str) -> subprocess.CompletedProcess:
@@ -97,14 +124,24 @@ class MTPManager:
         Returns
         -------
         subprocess.CompletedProcess
-            The result of the command execution.
+            The return code of the operation, among other things.
+
+        Raises
+        ------
+        SystemExit
+            If the operation fails.
         """
+        try:
+            cmd = f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
+            mount_operation = self.run_cmd(cmd, shell=True, check=True)
+            return mount_operation
 
-        return self.run_cmd(
-            f'"{self.mtpmount_path}" {operation} "{self.device_name}" "{self.storage_name}" {self.drive_letter}'
-        )
+        except subprocess.CalledProcessError as e:
+            print(f"\n{e}")
+            self.kill_process(self.process_name)
+            raise SystemExit(1)
 
-    def kill_process(self, process_name: str):
+    def kill_process(self, process_name: str) -> None:
         """
         Terminates the specified process if it is running.
 
@@ -116,13 +153,14 @@ class MTPManager:
 
         # Check if the process is running
         cmd = f'tasklist /fi "imagename eq {process_name}"'
-        process_check = subprocess.run(cmd, capture_output=True, text=True)
+        process_check = self.run_cmd(cmd, capture_output=True, text=True)
 
         # Check if the process name is found in the tasklist output
         if process_name.lower() in process_check.stdout.lower():
-            self.run_cmd(f"taskkill /f /im {process_name}")
+            cmd = f"taskkill /f /im {process_name}"
+            self.run_cmd(cmd, shell=True, check=True)
 
-    def run_cmd(self, cmd: str) -> subprocess.CompletedProcess:
+    def run_cmd(self, cmd: str, **kwargs) -> subprocess.CompletedProcess:
         """
         Executes the specified command.
 
@@ -130,12 +168,16 @@ class MTPManager:
         ----------
         cmd : str
             The command to execute.
+        **kwargs
+            Additional keyword arguments to pass to subprocess.run.
 
         Returns
         -------
         subprocess.CompletedProcess
-            The result of the command execution.
+            The return code of the command, among other things.
         """
 
-        results = subprocess.run(cmd, shell=True, check=True)
-        return results
+        if not self.verbose:
+            kwargs.setdefault("capture_output", True)
+
+        return subprocess.run(cmd, **kwargs)
