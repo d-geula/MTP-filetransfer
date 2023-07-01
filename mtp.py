@@ -41,15 +41,15 @@ class MTPManager:
         self.drive_letter = drive_letter
         self.verbose = verbose
 
-    def copy_files(self, src: list[str], dest: str, overwrite=False) -> None:
+    def copy_files(self, src, dest, overwrite=False) -> None:
         """
-        Copies one or more files or folders to the specified destination path using `xcopy`.
+        Copies one or more files / folders to the specified destination path.
 
         Parameters
         ----------
-        src : list
-            A list of source paths to copy.
-        dest : str
+        src
+            A single path or a list of source paths to copy.
+        dest
             The destination path to copy to.
         overwrite : bool, optional
             Overwrite existing files at the destination without prompting for confirmation.
