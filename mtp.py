@@ -43,19 +43,19 @@ class MTPManager:
         drive_letter: str,
         verbose: Optional[bool] = True,
     ):
-        self.mtpmount_path = Path(mtpmount_path)
-
-        if not self.mtpmount_path.is_file():
+        if not Path(mtpmount_path).is_file():
             raise FileNotFoundError(
-                f'Invalid mtpmount path: "{self.mtpmount_path}" does not exist.'
+                f'the mtpmount path "{mtpmount_path}" does not exist.'
             )
+        else:
+            self.mtpmount_path = Path(mtpmount_path)
+            self.process_name = self.mtpmount_path.name
 
-        self.process_name = self.mtpmount_path.name
         self.device_name = device_name
         self.storage_name = storage_name
 
         if not re.match(r"^[D-Zd-z]$", drive_letter):
-            raise ValueError(f'Invalid drive letter (D-Z): "{drive_letter}"')
+            raise ValueError(f'"{drive_letter}" is not a valid drive letter (D-Z).')
         else:
             self.drive_letter = drive_letter
 
