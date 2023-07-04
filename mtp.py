@@ -1,22 +1,22 @@
 # Author: D.Geula
 # GitHub: https://github.com/d-geula
 # Date: 18-06-2023
-# Description: python access for mtpmount.
+# Description: Provides simple a python interface for the mtpmount command line tool.
 
 import re
 import sys
 import subprocess
 from pathlib import Path
-from typing import Union, Optional, Any
+from typing import Optional
 
 
 class MTPManager:
     """
-    Transfers files from one or more source paths to a destination path.
+    Provides simple a python interface for the mtpmount command line tool.
 
     Parameters
     ----------
-    mtpmount_path : Any
+    mtpmount_path : path_like
         The path to the mtpmount executable.
     device_name : str
         The name of the device to mount.
@@ -37,7 +37,7 @@ class MTPManager:
 
     def __init__(
         self,
-        mtpmount_path: Any,
+        mtpmount_path,
         device_name: str,
         storage_name: str,
         drive_letter: str,
@@ -61,20 +61,21 @@ class MTPManager:
 
         self.verbose = verbose
 
-    def copy(
-        self, src: Union[Any, list[Any]], dest: Any, overwrite: Optional[bool] = False
-    ) -> None:
+    def copy(self, src, dest, overwrite: Optional[bool] = False) -> None:
         """
-        Copies one or more files / folders to the specified destination path.
+        Copies one or more source paths to a destination path on the MTP device.
+
+        This method uses the xcopy command to copy files and folders,
+        as well as automatically handle the mounting and unmounting of the MTP device.
 
         Parameters
         ----------
-        src : Any or list of Any
+        src : path_like or list of path_like
             A single path or a list of source paths to copy.
-        dest : Any
+        dest : path_like
             The destination path to copy to.
         overwrite : bool, default=False
-            Overwrite existing files at the destination without prompting for confirmation.
+            Adds the '/Y' flag to the xcopy command to overwrite files without prompting.
 
         Raises
         ------
@@ -86,7 +87,8 @@ class MTPManager:
 
         if not dest.lower().startswith(self.drive_letter.lower()):
             raise ValueError(
-                f'destination path does not match the drive letter of the MTP device ("{self.drive_letter}").'
+                f"destination path does not match the drive letter of the "
+                'MTP device ("{self.drive_letter}").'
             )
 
         if not re.match(r"^[A-Za-z]:/", dest):
@@ -126,7 +128,8 @@ class MTPManager:
             except ValueError as e:
                 while True:
                     response = input(
-                        f"{e}\nDo you want to skip this item, or cancel the operation? Y (skip), N (cancel): "
+                        f"{e}\nDo you want to skip this item, or cancel the operation? "
+                        "Y (skip), N (cancel): "
                     )
                     if response.lower() in ["y", "n"]:
                         break
@@ -136,7 +139,6 @@ class MTPManager:
                 else:
                     continue
 
-        # kill the process after unmount operation is complete
         unmount = self.manage_storage("unmount")
         if unmount.returncode == 0:
             self.kill_process(self.process_name)
@@ -175,13 +177,13 @@ class MTPManager:
             self.kill_process(self.process_name)
             sys.exit(1)
 
-    def kill_process(self, process_name) -> None:
+    def kill_process(self, process_name: str) -> None:
         """
         Terminates the specified process if it is running.
 
         Parameters
         ----------
-        process_name
+        process_name : str
             The executable name of the process to terminate.
         """
 
@@ -194,13 +196,13 @@ class MTPManager:
             cmd = ["taskkill", "/f", "/im", process_name]
             self.run_cmd(cmd)
 
-    def run_cmd(self, cmd, **kwargs) -> subprocess.CompletedProcess:
+    def run_cmd(self, cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
         """
         Executes the specified command.
 
         Parameters
         ----------
-        cmd
+        cmd : list of str
             The command to execute.
         **kwargs
             Keyword arguments to pass to `subprocess.run()`.
